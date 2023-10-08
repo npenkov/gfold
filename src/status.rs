@@ -1,7 +1,7 @@
 //! This module contains the [`crate::status::Status`] type.
 
 use anyhow::Result;
-use git2::{ErrorCode, Reference, Remote, Repository, StatusOptions};
+use git2::{BranchType, ErrorCode, Reference, Remote, Repository, StatusOptions};
 use log::debug;
 use serde::{Deserialize, Serialize};
 
@@ -19,6 +19,8 @@ pub enum Status {
     Unknown,
     /// Indicates that there is at least one commit not pushed to the remote from the working tree.
     Unpushed,
+    /// When there are remote changes that are not merged in the working tree.
+    Unpulled,
 }
 
 impl Status {
@@ -30,6 +32,7 @@ impl Status {
             Self::Unclean => "unclean",
             Self::Unknown => "unknown",
             Self::Unpushed => "unpushed",
+            Self::Unpulled => "unpulled",
         }
     }
 
@@ -63,8 +66,14 @@ impl Status {
             Ok(v) if v.is_empty() => match &head {
                 Some(head) => match remote_name {
                     Some(remote_name) => match Self::is_unpushed(repo, head, &remote_name)? {
-                        true => Status::Unpushed,
-                        false => Status::Clean,
+                        true => match Self::has_unmerged_changes(repo, head, &remote_name)? {
+                            true => Status::Unpulled,
+                            false => Status::Unpushed,
+                        },
+                        false => match Self::has_unmerged_changes(repo, head, &remote_name)? {
+                            true => Status::Unpulled,
+                            false => Status::Clean,
+                        },
                     },
                     None => Status::Clean,
                 },
@@ -110,7 +119,29 @@ impl Status {
         )
     }
 
-    fn choose_remote_greedily(
+    fn has_unmerged_changes(
+        repo: &Repository,
+        head: &Reference<'_>,
+        remote_name: &str,
+    ) -> Result<bool, git2::Error> {
+        let local_head = head.peel_to_commit()?;
+        let short_remote_branch_name = head.shorthand().unwrap();
+        let remote_branch_name = format!("{}/{}", remote_name, short_remote_branch_name);
+        
+        // Find the remote branch.
+        let remote_branch = match repo.find_branch(&remote_branch_name, BranchType::Remote) {
+            Ok(branch) => branch.into_reference(),
+            Err(_) => return Ok(false), // remote branch does not exist
+        };
+
+        let remote_head = remote_branch.peel_to_commit()?;
+        let changes = repo.graph_ahead_behind(remote_head.id(), local_head.id())?;
+        // Check if there are changes return true if there are
+        Ok(changes.0 > 0)
+    }
+
+    /// Greedily chooses a remote if "origin" is not found.
+    pub fn choose_remote_greedily(
         repository: &Repository,
     ) -> Result<(Option<Remote<'_>>, Option<String>), git2::Error> {
         let remotes = repository.remotes()?;

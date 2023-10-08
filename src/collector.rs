@@ -31,10 +31,12 @@ impl RepositoryCollector {
         path: &Path,
         include_email: bool,
         include_submodules: bool,
+        fetch_remote: bool,
+        fetch_password: String,
     ) -> Result<RepositoryCollection> {
         let unprocessed = TargetCollector::run(path.to_path_buf())?
             .par_iter()
-            .map(|path| RepositoryView::new(path, include_email, include_submodules))
+            .map(|path| RepositoryView::new(path, include_email, include_submodules, fetch_remote, fetch_password.clone()))
             .collect::<Vec<UnprocessedRepositoryView>>();
 
         let mut processed = RepositoryCollection::new();

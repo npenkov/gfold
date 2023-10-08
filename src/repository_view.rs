@@ -5,9 +5,13 @@ use std::path::Path;
 
 use anyhow::Result;
 use anyhow::anyhow;
-use git2::Repository;
+use git2::{Cred, ErrorCode, FetchOptions, RemoteCallbacks, Repository};
 use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
+use ssh2_config::{ParseRule, SshConfig};
+use std::fs::File;
+use std::io::{self, BufReader};
+use std::path::{Path, PathBuf};
 use submodule_view::SubmoduleView;
 
 use crate::status::Status;
@@ -41,6 +45,8 @@ impl RepositoryView {
         repo_path: &Path,
         include_email: bool,
         include_submodules: bool,
+        fetch_remote: bool,
+        fetch_password: String,
     ) -> Result<RepositoryView> {
         debug!(
             "attempting to generate collector for repository_view at path: {}",
@@ -80,15 +86,30 @@ impl RepositoryView {
             None => "HEAD",
         };
 
-        let url = match remote {
-            Some(remote) => remote.url().map(|s| s.to_string()),
-            None => None,
-        };
-
         let email = match include_email {
             true => Self::get_email(&repo),
             false => None,
         };
+
+        let url = match remote {
+            Some(remote) => remote.url().map(|s| s.to_string()),
+            None => None,
+        };
+        let url_clone = url.clone();
+        let url_clone2 = url.clone();
+        let binding = url_clone2.unwrap_or("".to_string());
+        let host = binding
+            .split('@')
+            .nth(1)
+            .unwrap_or("")
+            .split(':')
+            .next()
+            .unwrap_or("");
+
+        // Fetch the remote branch.
+        if fetch_remote && url.is_some() && head.is_some() {
+            fetch_remote_locally(&repo, url, host, fetch_password)?;
+        }
 
         debug!(
             "finalized collector collection for repository_view at path: {}",
@@ -98,7 +119,7 @@ impl RepositoryView {
             repo_path,
             Some(branch.to_string()),
             status,
-            url,
+            url_clone,
             email,
             submodules,
         )
@@ -188,4 +209,93 @@ impl RepositoryView {
         }
         None
     }
+}
+
+fn fetch_remote_locally(repo: &Repository, url: Option<String>, host: &str, fetch_password: String) -> Result<()> {
+    let (remote, _) = match repo.find_remote("origin") {
+        Ok(origin) => (Some(origin), Some("origin".to_string())),
+        Err(e) if e.code() == ErrorCode::NotFound => Status::choose_remote_greedily(&repo)?,
+        Err(e) => return Err(e.into()),
+    };
+    let mut some_remote = remote.unwrap();
+    let current_head = match repo.head() {
+        Ok(head) => Some(head),
+        Err(ref e)
+            if e.code() == ErrorCode::UnbornBranch || e.code() == ErrorCode::NotFound =>
+        {
+            None
+        }
+        Err(e) => return Err(e.into()),
+    };
+    let some_head = current_head.unwrap();
+    let short_remote_branch_name = some_head.shorthand().unwrap();
+    let mut callbacks = RemoteCallbacks::new();
+    let mut fetch_options = FetchOptions::new();
+    let remote_url = url.unwrap().clone();
+    let is_https = remote_url.starts_with("https://");
+    if !is_https {
+        debug!("fetching remote {} with ssh key", remote_url);
+        callbacks.credentials(|_url, username_from_url, _allowed_types| {
+            let host_to_check = host.to_string();
+            let default_config_path = std::env::var("HOME").unwrap() + "/.ssh/config";
+            let mut reader = BufReader::new(
+                File::open(default_config_path).expect("Could not open configuration file"),
+            );
+
+            let config = SshConfig::default()
+                .parse(&mut reader, ParseRule::STRICT)
+                .expect("Failed to parse configuration");
+
+            let default_params = config.default_params();
+            // Get the host from the remote url that is in format "git@host:owner/repo"
+
+            let params = config.query(host_to_check);
+            // Compose Default key by combining env variable $HOME and "/.ssh/config"
+            let default_key_path = std::env::var("HOME").unwrap() + "/.ssh/id_rsa";
+            let mut ssh_key_path = default_key_path.as_str();
+
+            // Get the ssh_key_path as string from the first entry from config "IdentityFile" if exists
+            // let identity_file = params.identity_file.or(default_params.identity_file).unwrap().first();
+            let binding = params
+                .identity_file
+                .or(default_params.identity_file)
+                .to_owned()
+                .unwrap()
+                .to_owned();
+            if let Some(identity_file) = binding.first() {
+                ssh_key_path = identity_file.to_str().unwrap();
+            }
+            // in case there are multiple entries, get the first one
+            debug!("ssh_key_path: {}", ssh_key_path);
+            let pass = if fetch_password.is_empty() {
+              None
+          } else {
+              Some(fetch_password.as_str())
+          };
+          
+            return Cred::ssh_key(
+                username_from_url.unwrap(),
+                None,
+                Path::new(ssh_key_path.clone()),
+                pass,
+            );
+        });
+    }
+    fetch_options.remote_callbacks(callbacks);
+    Ok(if let Err(e) =
+        some_remote.fetch(&[&short_remote_branch_name], Some(&mut fetch_options), None)
+    {
+        let remote_url = some_remote.url().unwrap_or("unknown");
+        debug!(
+          "assuming unmerged; could not fetch remote branch {} from {} (ignored error: {})",
+          short_remote_branch_name, remote_url, e
+      );
+        // return Ok(false);
+    } else {
+        debug!(
+          "fetched remote branch {} from {}",
+          short_remote_branch_name, remote_url
+      );
+        // return Ok(true);
+    })
 }

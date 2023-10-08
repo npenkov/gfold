@@ -91,7 +91,7 @@ fn main() -> Result<()> {
             debug!("processing path: {}", path.display());
 
             let repository_collection =
-                RepositoryCollector::run(path, include_email, include_submodules)?;
+                RepositoryCollector::run(path, include_email, include_submodules, false, String::new())?;
             let display_harness = DisplayHarness::new(config.display_mode, config.color_mode);
             display_harness.run(&repository_collection)?;
         }
@@ -285,7 +285,7 @@ mod tests {
         expected_collection.insert(Some(nested_expected_views_key), nested_expected_views_raw);
 
         // Generate a collection.
-        let found_collection = RepositoryCollector::run(root.path(), false, false)?;
+        let found_collection = RepositoryCollector::run(root.path(), false, false, false, String::from(""))?;
 
         // Ensure the found collection matches our expected one. Sort the collection for the
         // assertion.
