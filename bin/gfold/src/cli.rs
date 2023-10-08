@@ -64,6 +64,17 @@ struct Cli {
     dry_run: bool,
     #[arg(short, long, help = "ignore config file settings")]
     ignore_config_file: bool,
+    #[arg(
+        short,
+        long,
+        help = "fetch the remote to determine if there are any changes"
+    )]
+    fetch_remote: bool,
+    #[arg(
+        long="fetch-password",
+        help = "specify display fetch password to decode the private key"
+    )]
+    fetch_password: Option<String>,
 }
 
 pub struct CliHarness {
@@ -119,8 +130,13 @@ impl CliHarness {
                     DisplayMode::Json => (true, true),
                     DisplayMode::Standard => (true, false),
                 };
-                let repository_collection =
-                    RepositoryCollector::run(&config.path, include_email, include_submodules)?;
+                let repository_collection = RepositoryCollector::run(
+                    &config.path,
+                    include_email,
+                    include_submodules,
+                    self.cli.fetch_remote,
+                    self.cli.fetch_password.clone().unwrap_or_default(),
+                )?;
                 let display_harness = DisplayHarness::new(config.display_mode, config.color_mode);
                 display_harness.run(&repository_collection)?;
             }

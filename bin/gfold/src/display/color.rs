@@ -32,6 +32,7 @@ impl ColorHarness {
             Status::Clean => Color::Green,
             Status::Unpushed => Color::Blue,
             Status::Unclean => Color::Yellow,
+            Status::Unpulled => Color::Magenta,
         })))?;
         write!(
             &mut stdout,

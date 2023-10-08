@@ -204,7 +204,7 @@ mod tests {
         expected_collection.insert(Some(nested_expected_views_key), nested_expected_views_raw);
 
         // Generate a collection.
-        let found_collection = RepositoryCollector::run(root.path(), false, false)?;
+        let found_collection = RepositoryCollector::run(root.path(), false, false, false, String::from(""))?;
 
         // Ensure the found collection matches our expected one. Sort the collection for the
         // assertion.

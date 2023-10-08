@@ -13,10 +13,12 @@ readme = "README.md"
 repository = "https://github.com/nickgerace/gfold/"
 
 [dependencies]
-git2 = { workspace = true }
+git2 = { workspace = true, features = ["https", "ssh"] }
 log = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }
+ssh2 = "0.9.4"
+ssh2-config = "0.2.2"
 thiserror = { workspace = true }
 
 [dev-dependencies]
