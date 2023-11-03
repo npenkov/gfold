@@ -93,7 +93,7 @@ impl RepositoryView {
         };
         let (status, head, remote) = Status::find(&repo)?;
 
-        let submodules = if include_submodules {
+        let submodules = if include_submodules && !repo.is_bare() {
             SubmoduleView::list(&repo)?
         } else {
             Vec::with_capacity(0)
@@ -231,7 +231,12 @@ impl RepositoryView {
     }
 }
 
-fn fetch_remote_locally(repo: &Repository, url: Option<String>, host: &str, fetch_password: String) -> Result<(), RepositoryViewError> {
+fn fetch_remote_locally(
+    repo: &Repository,
+    url: Option<String>,
+    host: &str,
+    fetch_password: String,
+) -> Result<(), RepositoryViewError> {
     let (remote, _) = match repo.find_remote("origin") {
         Ok(origin) => (Some(origin), Some("origin".to_string())),
         Err(e) if e.code() == ErrorCode::NotFound => Status::choose_remote_greedily(&repo)?,
@@ -240,9 +245,7 @@ fn fetch_remote_locally(repo: &Repository, url: Option<String>, host: &str, fetc
     let mut some_remote = remote.unwrap();
     let current_head = match repo.head() {
         Ok(head) => Some(head),
-        Err(ref e)
-            if e.code() == ErrorCode::UnbornBranch || e.code() == ErrorCode::NotFound =>
-        {
+        Err(ref e) if e.code() == ErrorCode::UnbornBranch || e.code() == ErrorCode::NotFound => {
             None
         }
         Err(e) => return Err(e.into()),
@@ -288,11 +291,11 @@ fn fetch_remote_locally(repo: &Repository, url: Option<String>, host: &str, fetc
             // in case there are multiple entries, get the first one
             debug!("ssh_key_path: {}", ssh_key_path);
             let pass = if fetch_password.is_empty() {
-              None
-          } else {
-              Some(fetch_password.as_str())
-          };
-          
+                None
+            } else {
+                Some(fetch_password.as_str())
+            };
+
             return Cred::ssh_key(
                 username_from_url.unwrap(),
                 None,
@@ -302,20 +305,22 @@ fn fetch_remote_locally(repo: &Repository, url: Option<String>, host: &str, fetc
         });
     }
     fetch_options.remote_callbacks(callbacks);
-    Ok(if let Err(e) =
-        some_remote.fetch(&[&short_remote_branch_name], Some(&mut fetch_options), None)
-    {
-        let remote_url = some_remote.url().unwrap_or("unknown");
-        debug!(
-          "assuming unmerged; could not fetch remote branch {} from {} (ignored error: {})",
-          short_remote_branch_name, remote_url, e
-      );
-        // return Ok(false);
-    } else {
-        debug!(
-          "fetched remote branch {} from {}",
-          short_remote_branch_name, remote_url
-      );
-        // return Ok(true);
-    })
+    Ok(
+        if let Err(e) =
+            some_remote.fetch(&[&short_remote_branch_name], Some(&mut fetch_options), None)
+        {
+            let remote_url = some_remote.url().unwrap_or("unknown");
+            debug!(
+                "assuming unmerged; could not fetch remote branch {} from {} (ignored error: {})",
+                short_remote_branch_name, remote_url, e
+            );
+            // return Ok(false);
+        } else {
+            debug!(
+                "fetched remote branch {} from {}",
+                short_remote_branch_name, remote_url
+            );
+            // return Ok(true);
+        },
+    )
 }
