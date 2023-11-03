@@ -56,6 +56,14 @@ impl TargetCollector {
                 .is_some_and(|file_name| file_name.starts_with('.'))
         {
             let path = entry.path();
+            
+            // Check for bare repository - e.g. if there is file named "HEAD" in the root
+            let bare = path.join("HEAD").exists();
+            if bare {
+                debug!("found bare repository: {:?}", &path);
+                return Ok(MaybeTarget::Single(path));
+            }
+
             let git_sub_item = path.join(".git");
             if git_sub_item.exists() {
                 if git_sub_item.is_dir() {
