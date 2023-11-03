@@ -71,7 +71,7 @@ struct Cli {
     )]
     fetch_remote: bool,
     #[arg(
-        long="fetch-password",
+        long = "fetch-password",
         help = "specify display fetch password to decode the private key"
     )]
     fetch_password: Option<String>,
