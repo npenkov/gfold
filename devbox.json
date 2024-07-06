@@ -4,7 +4,7 @@
     "openssl@latest",
     "libiconv@latest",
     "pkg-config@latest",
-    "darwin.apple_sdk.frameworks.Security"
+    "cargo@latest"
   ],
   "shell": {
     "init_hook": ["echo 'Welcome to devbox!' > /dev/null"],
@@ -13,4 +13,3 @@
     }
   }
 }
-

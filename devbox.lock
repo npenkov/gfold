@@ -1,9 +1,53 @@
 {
   "lockfile_version": "1",
   "packages": {
-    "darwin.apple_sdk.frameworks.Security": {
-      "resolved": "github:NixOS/nixpkgs/75a52265bda7fd25e06e3a67dee3f0354e73243c#darwin.apple_sdk.frameworks.Security",
-      "source": "nixpkg"
+    "cargo@latest": {
+      "last_modified": "2024-06-12T20:55:33Z",
+      "resolved": "github:NixOS/nixpkgs/a9858885e197f984d92d7fe64e9fff6b2e488d40#cargo",
+      "source": "devbox-search",
+      "version": "1.78.0",
+      "systems": {
+        "aarch64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/bf2yrdc59bc1r6bjjp7sv7psg97fm7vz-cargo-1.78.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/bf2yrdc59bc1r6bjjp7sv7psg97fm7vz-cargo-1.78.0"
+        },
+        "aarch64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/7bni82i90zm7gjwbq03csx5dbwc15zgd-cargo-1.78.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/7bni82i90zm7gjwbq03csx5dbwc15zgd-cargo-1.78.0"
+        },
+        "x86_64-darwin": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/1z813izigsvb2x2nqpnw1y4lmw9ash67-cargo-1.78.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/1z813izigsvb2x2nqpnw1y4lmw9ash67-cargo-1.78.0"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "name": "out",
+              "path": "/nix/store/qyw7qc22j2ngf9wip8sxagaxb0387gnq-cargo-1.78.0",
+              "default": true
+            }
+          ],
+          "store_path": "/nix/store/qyw7qc22j2ngf9wip8sxagaxb0387gnq-cargo-1.78.0"
+        }
+      }
     },
     "libiconv@latest": {
       "last_modified": "2024-06-12T20:55:33Z",
@@ -38,6 +82,14 @@
             }
           ],
           "store_path": "/nix/store/53ygysdzqfasmwb2v12zffpyhxf31vl9-libiconv-99"
+        },
+        "x86_64-linux": {
+          "outputs": [
+            {
+              "path": "/nix/store/k0nyidqrj3flins3fy2l0gbx36b0b5dn-glibc-iconv-2.39",
+              "default": true
+            }
+          ]
         }
       }
     },
