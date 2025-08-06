@@ -31,8 +31,8 @@ impl Status {
             Self::Clean => "clean",
             Self::Unclean => "unclean",
             Self::Unknown => "unknown",
-            Self::Unpushed => "unpushed",
             Self::Unpulled => "unpulled",
+            Self::Unpushed => "unpushed",
         }
     }
 

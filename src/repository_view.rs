@@ -1,15 +1,15 @@
 //! This module contains [`RepositoryView`], which provides the [`Status`]
 //! and general overview of the state of a given Git repository.
 
-use anyhow::Result;
-use anyhow::anyhow;
+use std::io::BufReader;
+use std::path::Path;
+use std::{fs::File, path::PathBuf};
+
+use anyhow::{Result, anyhow};
 use git2::{Cred, ErrorCode, FetchOptions, RemoteCallbacks, Repository};
 use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 use ssh2_config::{ParseRule, SshConfig};
-use std::fs::File;
-use std::io::BufReader;
-use std::path::Path;
 use submodule_view::SubmoduleView;
 
 use crate::status::Status;
@@ -254,12 +254,18 @@ fn fetch_remote_locally(
             // Compose Default key by combining env variable $HOME and "/.ssh/config"
             let default_key_path = std::env::var("HOME").unwrap() + "/.ssh/id_rsa";
             let mut ssh_key_path = default_key_path.as_str();
+            let default_key_file = PathBuf::from(ssh_key_path);
+            // default params from ssh config
 
             // Get the ssh_key_path as string from the first entry from config "IdentityFile" if exists
-            if let Some(identity_file_list) = &params.identity_file {
-                if let Some(identity_file) = identity_file_list.first() {
-                    ssh_key_path = identity_file.to_str().unwrap();
-                }
+            let binding = params
+                .identity_file
+                .or(Some(vec![default_key_file]))
+                .to_owned()
+                .unwrap()
+                .to_owned();
+            if let Some(identity_file) = binding.first() {
+                ssh_key_path = identity_file.to_str().unwrap();
             }
             // in case there are multiple entries, get the first one
             debug!("ssh_key_path: {}", ssh_key_path);
