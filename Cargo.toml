@@ -1,16 +1,16 @@
 [package]
-name = "gfold"
-version = "2025.7.0"
+name = "gfld"
+version = "2025.10.26"
 
 authors = ["Nick Gerace <nickagerace@gmail.com>"]
 categories = ["command-line-utilities", "command-line-interface"]
 description = "CLI tool to help keep track of your Git repositories."
 edition = "2024"
-homepage = "https://github.com/nickgerace/gfold"
+homepage = "https://github.com/npenkov/gfold"
 keywords = ["git", "cli"]
 license = "Apache-2.0"
 readme = "README.md"
-repository = "https://github.com/nickgerace/gfold"
+repository = "https://github.com/npenkov/gfold"
 
 [profile.release]
 codegen-units = 1
@@ -23,7 +23,9 @@ strip = true
 anyhow = { version = "1.0", features = ["backtrace"] }
 clap = { version = "4.5", features = ["derive"] }
 clap-verbosity-flag = "3.0"
-env_logger = { version = "0.11", features = [ "humantime" ], default-features = false }
+env_logger = { version = "0.11", features = [
+  "humantime",
+], default-features = false }
 git2 = { version = "0.20", default-features = false }
 log = "0.4"
 rayon = "1.10"
@@ -33,6 +35,7 @@ serde_json = "1.0"
 termcolor = "1.4"
 toml = "0.9"
 user_dirs = "0.2"
+ssh2-config = "0.6.2"
 
 [dev-dependencies]
 pretty_assertions = "1.4"

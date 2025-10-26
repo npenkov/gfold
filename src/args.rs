@@ -6,15 +6,13 @@ use clap_verbosity_flag::{InfoLevel, Verbosity};
 use crate::config::{ColorMode, DisplayMode};
 
 const HELP: &str = "\
-More information: https://github.com/nickgerace/gfold
-
 Description: this application helps you keep track of multiple Git repositories via CLI. By default, it displays relevant information for all repos in the current working directory.
 
 Config file usage: while CLI options are prioritized, default options will fallback to the config file if it exists. Here are the config file lookup locations:
 
-    $XDG_CONFIG_HOME/gfold.toml
-    $XDG_CONFIG_HOME/gfold/config.toml
-    $HOME/.config/gfold.toml (or {{FOLDERID_Profile}}\\.config\\gfold.toml on Windows)";
+    $XDG_CONFIG_HOME/gfld.toml
+    $XDG_CONFIG_HOME/gfld/config.toml
+    $HOME/.config/gfld.toml (or {{FOLDERID_Profile}}\\.config\\gfld.toml on Windows)";
 
 #[derive(Debug, Parser)]
 #[command(version, about = HELP, long_about = None)]
@@ -30,6 +28,8 @@ pub struct Cli {
     /// Display finalized config options and exit (merged options from an optional config file and command line arguments)
     #[arg(long)]
     pub dry_run: bool,
+    #[arg(long)]
+    pub remote: bool,
     /// Ignore config file settings
     #[arg(short, long)]
     pub ignore_config_file: bool,

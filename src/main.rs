@@ -88,10 +88,15 @@ fn main() -> Result<()> {
             DisplayMode::Standard | DisplayMode::StandardAlphabetical => (true, false),
         };
         for path in &config.paths {
-            debug!("processing path: {}", path.display());
+            debug!("processing path: {} fetch remote: {}", path.display(), cli.remote);
 
-            let repository_collection =
-                RepositoryCollector::run(path, include_email, include_submodules, false, String::new())?;
+            let repository_collection = RepositoryCollector::run(
+                path,
+                include_email,
+                include_submodules,
+                cli.remote,
+                String::new(),
+            )?;
             let display_harness = DisplayHarness::new(config.display_mode, config.color_mode);
             display_harness.run(&repository_collection)?;
         }

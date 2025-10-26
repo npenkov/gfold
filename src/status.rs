@@ -17,10 +17,10 @@ pub enum Status {
     Unclean,
     /// Provided if the state of the working tree could neither be found nor determined.
     Unknown,
-    /// Indicates that there is at least one commit not pushed to the remote from the working tree.
-    Unpushed,
     /// When there are remote changes that are not merged in the working tree.
     Unpulled,
+    /// Indicates that there is at least one commit not pushed to the remote from the working tree.
+    Unpushed,
 }
 
 impl Status {

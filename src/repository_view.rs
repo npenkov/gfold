@@ -1,8 +1,6 @@
 //! This module contains [`RepositoryView`], which provides the [`Status`]
 //! and general overview of the state of a given Git repository.
 
-use std::path::Path;
-
 use anyhow::Result;
 use anyhow::anyhow;
 use git2::{Cred, ErrorCode, FetchOptions, RemoteCallbacks, Repository};
@@ -10,8 +8,8 @@ use log::{debug, error, trace};
 use serde::{Deserialize, Serialize};
 use ssh2_config::{ParseRule, SshConfig};
 use std::fs::File;
-use std::io::{self, BufReader};
-use std::path::{Path, PathBuf};
+use std::io::BufReader;
+use std::path::Path;
 use submodule_view::SubmoduleView;
 
 use crate::status::Status;
@@ -249,24 +247,19 @@ fn fetch_remote_locally(
                 .parse(&mut reader, ParseRule::STRICT)
                 .expect("Failed to parse configuration");
 
-            let default_params = config.default_params();
             // Get the host from the remote url that is in format "git@host:owner/repo"
-
+            // query() returns default params when there's no rule for the host
             let params = config.query(host_to_check);
+
             // Compose Default key by combining env variable $HOME and "/.ssh/config"
             let default_key_path = std::env::var("HOME").unwrap() + "/.ssh/id_rsa";
             let mut ssh_key_path = default_key_path.as_str();
 
             // Get the ssh_key_path as string from the first entry from config "IdentityFile" if exists
-            // let identity_file = params.identity_file.or(default_params.identity_file).unwrap().first();
-            let binding = params
-                .identity_file
-                .or(default_params.identity_file)
-                .to_owned()
-                .unwrap()
-                .to_owned();
-            if let Some(identity_file) = binding.first() {
-                ssh_key_path = identity_file.to_str().unwrap();
+            if let Some(identity_file_list) = &params.identity_file {
+                if let Some(identity_file) = identity_file_list.first() {
+                    ssh_key_path = identity_file.to_str().unwrap();
+                }
             }
             // in case there are multiple entries, get the first one
             debug!("ssh_key_path: {}", ssh_key_path);
@@ -279,7 +272,7 @@ fn fetch_remote_locally(
             return Cred::ssh_key(
                 username_from_url.unwrap(),
                 None,
-                Path::new(ssh_key_path.clone()),
+                Path::new(ssh_key_path),
                 pass,
             );
         });
